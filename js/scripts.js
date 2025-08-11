@@ -42,6 +42,7 @@ const LANGUAGE_COLORS = {
   "TSQL": "#205b9f",
   "Vim Script": "#199f4b",
   "Makefile": "#427819",
+  "GDScript": "#478cbf",
   // fallbacks p/ nomes não mapeados:
   "SCSS": "#c6538c", "Sass": "#a53b70", "Vue": "#41B883", "Lua": "#000080"
 };
@@ -83,17 +84,15 @@ function repoCardTemplate(repo) {
   const desc = repo.description ? repo.description : "Sem descrição.";
   const homepage = repo.homepage && repo.homepage.trim() ? repo.homepage.trim() : null;
 
-  const langMain  = repo.language || null;                    // linguagem principal
-  const langColor = getLangColor(langMain) || null;           // cor (se mapeada)
+  const langMain  = repo.language || null;
+  const langColor = getLangColor(langMain) || null;
   const topics    = (repo.topics || []).slice(0, 4);
 
-  const pills = [
+  const pillsTop = [
     ...(langMain ? [`<span class="pill lang" title="Linguagem principal">${langMain}</span>`] : []),
-    ...topics.map(t => `<span class="pill">#${t}</span>`),
-    `<span class="pill" title="Última atualização">Atualizado: ${fmtDate(repo.updated_at)}</span>`
+    ...topics.map(t => `<span class="pill">#${t}</span>`)
   ].join("");
 
-  // define a variável CSS --lang-color para pintar a faixa do card (topo)
   const styleStripe = langColor ? `--lang-color:${langColor};` : "";
 
   return `
@@ -106,22 +105,16 @@ function repoCardTemplate(repo) {
       <p class="desc">${desc}</p>
 
       <div class="meta">
-        <div class="pills">${pills}</div>
-        <div class="star" title="Stars">
-          ⭐ <strong>${repo.stargazers_count || 0}</strong>
+        <div class="pills">${pillsTop}</div>
+        <div class="meta-bottom">
+          <span class="pill updated" title="Última atualização">Atualizado: ${fmtDate(repo.updated_at)}</span>
+          <span class="star" title="Stars">⭐ <strong>${repo.stargazers_count || 0}</strong></span>
         </div>
       </div>
-
-      <!-- Se quiser botões, reative o bloco abaixo -->
-      <!--
-      <div class="actions">
-        <a class="link" href="${repo.html_url}" target="_blank" rel="noopener">Repositório</a>
-        ${homepage ? `<a class="link" href="${homepage}" target="_blank" rel="noopener">Demo</a>` : ""}
-      </div>
-      -->
     </article>
   `;
 }
+
 
 // === Carrega e renderiza repositórios (1 request) ===
 async function loadRepos(){
