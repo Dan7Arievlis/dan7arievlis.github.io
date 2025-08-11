@@ -10,6 +10,8 @@
   --radius:16px;
 }
 
+#pager-top{ margin-bottom: 12px; }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -275,3 +277,74 @@ strong, b{font-weight:900}
 .pager-btn[disabled]{ opacity:.5; cursor:not-allowed; transform:none; }
 .pager-btn.is-current{ border-color:var(--accent); background:rgba(0,230,118,.12); }
 .pager-ellipsis{ color:var(--muted); padding:0 .25rem; user-select:none; }
+
+/* Accent por card (herdado da linguagem) */
+.card{ --card-accent: var(--lang-color, var(--accent)); }
+.card:hover{
+  border-color: var(--card-accent);
+  box-shadow:0 16px 40px rgba(0,0,0,.45);
+}
+.pill.lang::before{ background: var(--card-accent); }
+
+/* Contador */
+.repo-counter{
+  color: var(--muted);
+  font-weight: 900;
+  margin: 6px 0 0;
+}
+
+/* Badges do topo com cor por linguagem */
+.tech-badges .badge{
+  position:relative;
+  padding-left: 1.2rem;
+  --badge-color: var(--accent);
+}
+.tech-badges .badge::before{
+  content:"";
+  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:999px;
+  background: var(--badge-color);
+  box-shadow: 0 0 0 2px #0b121a;
+}
+
+
+/* Badges do topo já têm --badge-color (setada via JS). 
+   Vamos usar essa cor no highlight (hover/focus). */
+.tech-badges .badge{
+  position:relative;
+  padding:.35rem .6rem .35rem 1.2rem;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--bg-elev);
+  color:var(--fg);
+  font-weight:900; font-size:.9rem;
+  transition: border .2s ease, background .2s ease, color .2s ease, transform .12s ease, box-shadow .2s ease;
+}
+
+/* dot colorido já existente */
+.tech-badges .badge::before{
+  content:"";
+  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:999px;
+  background: var(--badge-color, var(--accent));
+  box-shadow: 0 0 0 2px #0b121a;
+}
+
+/* highlight no hover/foco usando a cor da linguagem */
+.tech-badges .badge:hover,
+.tech-badges .badge:focus-visible{
+  border-color: var(--badge-color, var(--accent));
+  /* Usa color-mix para um fundo levemente tingido pela cor da linguagem */
+  background: color-mix(in srgb, var(--badge-color, var(--accent)) 16%, transparent);
+  /* background: color-mix(in srgb, #00e676 16%, transparent); por exemplo */
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--badge-color, var(--accent)) 22%, transparent);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* (opcional) estado "selecionado" se algum dia você usar filtro por linguagem */
+.tech-badges .badge.is-active{
+  border-color: var(--badge-color, var(--accent));
+  background: color-mix(in srgb, var(--badge-color, var(--accent)) 26%, transparent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--badge-color, var(--accent)) 28%, transparent);
+}

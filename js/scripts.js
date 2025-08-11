@@ -1,9 +1,11 @@
 /* ====== Config ====== */
 const GH_USERNAME  = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
-const PAGE_SIZE    = (window.PORTFOLIO_CONFIG && (window.PORTFOLIO_CONFIG.pageSize || window.PORTFOLIO_CONFIG.perPage)) || 12; // quantos por página (UI)
+const PAGE_SIZE = (window.PORTFOLIO_CONFIG && (window.PORTFOLIO_CONFIG.pageSize || window.PORTFOLIO_CONFIG.perPage)) || 12; //quantos por página (UI)
 const GH_PER_PAGE  = 100; // quantos baixar da API do GitHub (máx 100 por request)
 
 /* ====== Estado para paginação ====== */
+let TOTAL_PUBLIC_REPOS = null;
+
 let ALL_REPOS = [];
 let FILTERED_REPOS = [];
 let CURRENT_PAGE = 1;
@@ -115,6 +117,26 @@ function repoCardTemplate(repo) {
   `;
 }
 
+function updateRepoCounter(){
+  const elCounter = document.getElementById("repo-counter");
+  if (!elCounter) return;
+
+  const totalFiltered = FILTERED_REPOS?.length || 0;
+  const totalPublic   = (TOTAL_PUBLIC_REPOS ?? totalFiltered);
+
+  let start = 0, end = 0;
+  if (totalFiltered > 0){
+    start = (CURRENT_PAGE - 1) * PAGE_SIZE + 1;
+    end   = Math.min(CURRENT_PAGE * PAGE_SIZE, totalFiltered);
+  }
+
+  // “quais” estão na página atual = range start–end
+  const rangeTxt = totalFiltered ? `${start}–${end} de ${totalFiltered}` : `0 de 0`;
+  // total públicos do perfil (pode ser maior que o filtrado/carregado)
+  const totalTxt = (totalPublic !== totalFiltered) ? ` • Total públicos: ${totalPublic}` : "";
+
+  elCounter.textContent = `Exibindo ${rangeTxt}${totalTxt}`;
+}
 
 // === Carrega e renderiza repositórios (1 request) ===
 async function loadRepos(){
@@ -184,12 +206,122 @@ function renderRepos(repos){
   ALL_REPOS = repos || [];
   FILTERED_REPOS = ALL_REPOS;
   CURRENT_PAGE = 1;
-  renderPage(CURRENT_PAGE);
-  setupControls(ALL_REPOS); // mantém sua busca/ordenar
+
+  ensurePagerContainers();    // cria #pager-top e #pager-bottom se não existirem
+  renderPage(1, { scroll:false });
+  setupControls(ALL_REPOS);   // mantém busca/ordenar
+}
+
+/* === Cria contêineres de pager (topo e base) uma única vez === */
+function ensurePagerContainers(){
+  const grid = document.querySelector("#repo-grid");
+  if (!document.getElementById("pager-top")){
+    const top = document.createElement("nav");
+    top.id = "pager-top";
+    top.className = "pager";
+    top.setAttribute("role","navigation");
+    top.setAttribute("aria-label","Paginação (topo)");
+    grid.insertAdjacentElement("beforebegin", top);
+  }
+  if (!document.getElementById("pager-bottom")){
+    const bottom = document.createElement("nav");
+    bottom.id = "pager-bottom";
+    bottom.className = "pager";
+    bottom.setAttribute("role","navigation");
+    bottom.setAttribute("aria-label","Paginação (base)");
+    grid.insertAdjacentElement("afterend", bottom);
+  }
+}
+
+/* === Renderiza ambos os pagers === */
+function renderPagers(totalPages){
+  renderPagerFor("pager-top", totalPages);
+  renderPagerFor("pager-bottom", totalPages);
+}
+
+/* === HTML do pager + eventos === */
+function renderPagerFor(containerId, totalPages){
+  const pager = document.getElementById(containerId);
+  if (!pager) return;
+
+  if (totalPages <= 1){
+    pager.innerHTML = "";
+    pager.hidden = true;
+    return;
+  }
+  pager.hidden = false;
+
+  const btn = (label, opts={}) => {
+    const { disabled=false, page=null, current=false } = opts;
+    return `<button class="pager-btn${current?' is-current':''}" ${disabled?'disabled':''} ${page?`data-page="${page}"`:''} ${current?'aria-current="page"':''}>${label}</button>`;
+  };
+
+  const windowSize = 5;
+  const startWin = Math.max(1, CURRENT_PAGE - 2);
+  const endWin = Math.min(totalPages, startWin + windowSize - 1);
+  const realStart = Math.max(1, Math.min(startWin, totalPages - windowSize + 1));
+
+  let html = "";
+  html += btn("‹", { disabled: CURRENT_PAGE===1, page: CURRENT_PAGE-1 });
+
+  if (realStart > 1){
+    html += btn(1, { page: 1 });
+    if (realStart > 2) html += `<span class="pager-ellipsis">…</span>`;
+  }
+
+  for (let p = realStart; p <= endWin; p++){
+    html += btn(p, { page: p, current: p===CURRENT_PAGE });
+  }
+
+  if (endWin < totalPages){
+    if (endWin < totalPages - 1) html += `<span class="pager-ellipsis">…</span>`;
+    html += btn(totalPages, { page: totalPages });
+  }
+
+  html += btn("›", { disabled: CURRENT_PAGE===totalPages, page: CURRENT_PAGE+1 });
+  pager.innerHTML = html;
+
+  // eventos (delegação)
+  pager.onclick = (e) => {
+    const b = e.target.closest(".pager-btn");
+    if (!b || b.disabled) return;
+    const page = parseInt(b.dataset.page, 10);
+    if (!isNaN(page)) renderPage(page, { scroll:true });
+  };
+}
+
+/* === Contador "Exibindo X–Y de Z • Total públicos: N" === */
+function updateRepoCounter(){
+  const elCounter = document.getElementById("repo-counter");
+  if (!elCounter) return;
+
+  const totalFiltered = FILTERED_REPOS?.length || 0;
+  const totalPublic   = (TOTAL_PUBLIC_REPOS ?? totalFiltered);
+
+  let start = 0, end = 0;
+  if (totalFiltered > 0){
+    start = (CURRENT_PAGE - 1) * PAGE_SIZE + 1;
+    end   = Math.min(CURRENT_PAGE * PAGE_SIZE, totalFiltered);
+  }
+
+  const rangeTxt = totalFiltered ? `${start}–${end} de ${totalFiltered}` : `0 de 0`;
+  const totalTxt = (totalPublic !== totalFiltered) ? ` • Total públicos: ${totalPublic}` : "";
+
+  elCounter.textContent = `Exibindo ${rangeTxt}${totalTxt}`;
+}
+
+/* === Scroll para o início da lista (considera header fixo) === */
+function scrollToReposStart(){
+  const section = document.getElementById("repos") || document.querySelector(".repos");
+  const header  = document.querySelector(".site-header");
+  const headerH = header ? header.offsetHeight : 0;
+  if (!section) return;
+  const y = section.getBoundingClientRect().top + window.pageYOffset - (headerH + 12);
+  window.scrollTo({ top: y, behavior: "smooth" });
 }
 
 // === Render de uma página específica (aplica slice) ===
-function renderPage(page = 1){
+function renderPage(page = 1, opts = { scroll:false }){
   const grid = document.querySelector("#repo-grid");
   const totalPages = Math.max(1, Math.ceil(FILTERED_REPOS.length / PAGE_SIZE));
   CURRENT_PAGE = Math.min(Math.max(1, page), totalPages);
@@ -200,7 +332,11 @@ function renderPage(page = 1){
   grid.innerHTML = items.map(repoCardTemplate).join("");
   makeCardsClickable();
   updateEmptyState();
-  renderPager(totalPages);
+
+  renderPagers(totalPages);   // atualiza topo e base
+  updateRepoCounter();        // "Exibindo X–Y de Z • Total públicos: N"
+
+  if (opts.scroll) scrollToReposStart();
 }
 
 // === Pager (Prev • 1 … n • Next) ===
@@ -285,12 +421,12 @@ function setupControls(repos){
         })
       : sorted;
 
-    FILTERED_REPOS = filtered;   // atualiza lista visível
-    renderPage(1);               // volta para a primeira página
+        FILTERED_REPOS = filtered;
+        renderPage(1, { scroll:true });   // volta ao topo da lista ao mudar filtro/ordem
+    }
 
     makeCardsClickable();
     updateEmptyState();
-  }
 
   search?.addEventListener("input", apply);
   sort?.addEventListener("change", apply);
@@ -325,6 +461,14 @@ function makeCardsClickable(){
   });
 }
 
+function colorizeTopBadges(){
+  document.querySelectorAll(".tech-badges .badge").forEach(b => {
+    const name = (b.textContent || "").trim();
+    const color = getLangColor(name);
+    if (color) b.style.setProperty("--badge-color", color);
+  });
+}
+
 /* ====== Util ====== */
 function updateEmptyState(){
   const empty = el("#empty");
@@ -336,6 +480,7 @@ function updateEmptyState(){
 (function bootstrap(){
   const yearEl = el("#year"); if (yearEl) yearEl.textContent = new Date().getFullYear();
   const userEl = el("#username"); if (userEl) userEl.textContent = GH_USERNAME;
+  colorizeTopBadges();
   loadRepos();
   loadAvatar();
 })();
@@ -347,7 +492,7 @@ async function loadAvatar(){
   if (!wrap || !img) return;
 
   // 1) tenta usar imagem local (assets/profile.jpg)
-  const localSrc = "assets/profile.jpg"; // coloque seu arquivo aqui
+//   const localSrc = "assets/profile.jpg"; // coloque seu arquivo aqui
   let done = false;
 
   function markLoaded(){
@@ -359,19 +504,22 @@ async function loadAvatar(){
   await new Promise((resolve) => {
     img.onload = () => { markLoaded(); resolve(); };
     img.onerror = () => resolve(); // se falhar, tenta GitHub
-    img.src = localSrc;
+    // img.src = localSrc;
   });
 
   if (done) return;
 
   // 2) fallback: busca avatar do GitHub pela API
-  try{
+   try{
     const res = await fetch(`https://api.github.com/users/${GH_USERNAME}`, {
       headers:{ "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }
     });
     if (!res.ok) throw new Error("user fetch failed");
     const data = await res.json();
-    // dica: pedir tamanho ajuda (parâmetro s=) — opcional
+
+    TOTAL_PUBLIC_REPOS = typeof data.public_repos === "number" ? data.public_repos : null;
+    updateRepoCounter(); // atualiza contador assim que soubermos o total público
+
     const url = data.avatar_url ? `${data.avatar_url}&s=120` : null;
     if (url){
       await new Promise((resolve)=> {
