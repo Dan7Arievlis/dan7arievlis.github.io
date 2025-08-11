@@ -1,6 +1,12 @@
 /* ====== Config ====== */
-const GH_USERNAME = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
-const PER_PAGE = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.perPage) || 9;
+const GH_USERNAME  = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
+const PAGE_SIZE    = (window.PORTFOLIO_CONFIG && (window.PORTFOLIO_CONFIG.pageSize || window.PORTFOLIO_CONFIG.perPage)) || 12; // quantos por página (UI)
+const GH_PER_PAGE  = 100; // quantos baixar da API do GitHub (máx 100 por request)
+
+/* ====== Estado para paginação ====== */
+let ALL_REPOS = [];
+let FILTERED_REPOS = [];
+let CURRENT_PAGE = 1;
 
 /* Cores por linguagem (baseadas no GitHub Linguist + ajustes p/ dark UI) */
 const LANGUAGE_COLORS = {
@@ -54,27 +60,42 @@ const sorters = {
   name: (a,b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity:"base" })
 };
 
+// === Cache simples em localStorage (30 min) ===
+const CACHE_KEY = `gh-repos:${GH_USERNAME}`;
+const CACHE_TTL_MS = 30 * 60 * 1000;
+
+function cacheGet(key){
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL_MS) return null;
+    return data;
+  } catch { return null; }
+}
+
+function cacheSet(key, data){
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+
 /* ====== Template ====== */
 function repoCardTemplate(repo) {
   const desc = repo.description ? repo.description : "Sem descrição.";
   const homepage = repo.homepage && repo.homepage.trim() ? repo.homepage.trim() : null;
-  const lang = repo.language ? [repo.language] : [];
-  const topics = (repo.topics || []).slice(0, 4);
-  // supondo langs = ["JavaScript","HTML","CSS"]
-    const colors = langs.map(getLangColor).filter(Boolean);
-    const stripe = colors.length
-    ? `linear-gradient(180deg, ${colors.map((c,i)=>`${c} ${Math.round(i*100/colors.length)}% ${Math.round((i+1)*100/colors.length)}%`).join(", ")})`
-    : null;
-    const styleStripe = stripe ? `--lang-color:${stripe};` : (langColor ? `--lang-color:${langColor};` : "");
-    // …e use style="${styleStripe}"
+
+  const langMain  = repo.language || null;                    // linguagem principal
+  const langColor = getLangColor(langMain) || null;           // cor (se mapeada)
+  const topics    = (repo.topics || []).slice(0, 4);
 
   const pills = [
-    ...lang.map(l => `<span class="pill lang" title="Linguagem principal">${l}</span>`),
+    ...(langMain ? [`<span class="pill lang" title="Linguagem principal">${langMain}</span>`] : []),
     ...topics.map(t => `<span class="pill">#${t}</span>`),
     `<span class="pill" title="Última atualização">Atualizado: ${fmtDate(repo.updated_at)}</span>`
   ].join("");
 
-  // card clicável: data-href com URL do repo
+  // define a variável CSS --lang-color para pintar a faixa do card (topo)
+  const styleStripe = langColor ? `--lang-color:${langColor};` : "";
+
   return `
     <article class="card clickable" role="link" tabindex="0"
              aria-label="Abrir repositório ${repo.name} no GitHub"
@@ -91,79 +112,163 @@ function repoCardTemplate(repo) {
         </div>
       </div>
 
-      <!-- <div class="actions">
-        <a class="link" href="${repo.html_url}" target="_blank" rel="noopener">
-          Repositório
-        </a>
+      <!-- Se quiser botões, reative o bloco abaixo -->
+      <!--
+      <div class="actions">
+        <a class="link" href="${repo.html_url}" target="_blank" rel="noopener">Repositório</a>
         ${homepage ? `<a class="link" href="${homepage}" target="_blank" rel="noopener">Demo</a>` : ""}
-      </div>  -->
+      </div>
+      -->
     </article>
   `;
 }
 
-/* ====== Fetch + Build ====== */
+// === Carrega e renderiza repositórios (1 request) ===
 async function loadRepos(){
-  const grid = el("#repo-grid");
-  const empty = el("#empty");
-  const error = el("#error");
+  const grid  = document.querySelector("#repo-grid");
+  const empty = document.querySelector("#empty");
+  const error = document.querySelector("#error");
 
   grid.setAttribute("aria-busy","true");
   empty.classList.add("hidden");
   error.classList.add("hidden");
 
+  // 1) tenta cache para render imediato
+  const cached = cacheGet(CACHE_KEY);
+  if (cached) {
+    renderRepos(cached);
+    grid.setAttribute("aria-busy","false");
+  }
+
+  // 2) busca online (atualiza UI; se falhar e não havia cache, mostra erro)
   try{
-    const res = await fetch(`https://api.github.com/users/${GH_USERNAME}/repos?per_page=${PER_PAGE}&sort=updated`, {
+    const url = `https://api.github.com/users/${GH_USERNAME}/repos?per_page=${GH_PER_PAGE}&sort=updated`;
+    const res = await fetch(url, {
       headers: {
         "Accept":"application/vnd.github+json",
         "X-GitHub-Api-Version":"2022-11-28"
-      }
+      },
+      cache: "no-store"
     });
 
-    if(!res.ok){
-      // Mostra erro claro (rate limit é comum)
-      const text = await res.text().catch(() => "");
-      throw new Error(`GitHub API status ${res.status}. ${text}`);
+    if (!res.ok) {
+      // trata casos comuns com mensagem melhor
+      const remaining = res.headers.get("X-RateLimit-Remaining");
+      const reset = res.headers.get("X-RateLimit-Reset");
+      const status = res.status;
+
+      if (status === 403 && remaining === "0" && reset) {
+        const waitMs = (+reset * 1000) - Date.now();
+        const mins = Math.max(1, Math.ceil(waitMs / 60000));
+        throw new Error(`Limite de requisições da API do GitHub atingido. Tente novamente em ~${mins} min.`);
+      }
+      if (status === 404) throw new Error(`Usuário "${GH_USERNAME}" não encontrado.`);
+      if (!navigator.onLine) throw new Error(`Você está offline. Verifique a conexão e tente novamente.`);
+
+      const text = await res.text().catch(()=>"");
+      throw new Error(`Falha ao carregar: HTTP ${status}. ${text}`);
     }
 
-    let repos = await res.json();
-
-    // Ordena por updated inicialmente
-    repos.sort(sorters.updated);
-
-    // depois de "repos.sort(sorters.updated);"
-    const LIMIT_LANG = 3;
-
-    async function fetchTopLangs(repo){
-    try{
-        const r = await fetch(repo.languages_url);
-        if (!r.ok) return [];
-        const data = await r.json();
-        return Object.entries(data).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n])=>n);
-    }catch{ return []; }
-    }
-
-    const enriched = await Promise.all(repos.map(async (repo, i) => {
-    const langs = (i < LIMIT_LANG) ? await fetchTopLangs(repo) : (repo.language ? [repo.language] : []);
-    return { repo, langs };
-    }));
-
-    // e adapte o template para aceitar {repo, langs}
-
-    // Render
-    grid.innerHTML = repos.map(repoCardTemplate).join("");
+    const repos = await res.json();
+    repos.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+    cacheSet(CACHE_KEY, repos);
+    renderRepos(repos);
     grid.setAttribute("aria-busy","false");
-
-    // Interações
-    setupControls(repos);
-    makeCardsClickable();
-    updateEmptyState();
-  }catch(e){
+  } catch (e){
     console.error(e);
-    grid.innerHTML = "";               // remove skeletons
-    error.textContent = "Não foi possível carregar os repositórios agora (possível limite de requisições da API). Atualize a página em alguns minutos.";
-    error.classList.remove("hidden");
-    grid.setAttribute("aria-busy","false");
+    if (!cached) {
+      grid.innerHTML = ""; // remove skeletons
+      error.textContent = e.message || "Não foi possível carregar os repositórios agora.";
+      error.classList.remove("hidden");
+      grid.setAttribute("aria-busy","false");
+    }
   }
+}
+
+// === Render + interação (reaproveita seu template/card clicável) ===
+// === Render principal: configura estado e mostra a página 1 ===
+function renderRepos(repos){
+  ALL_REPOS = repos || [];
+  FILTERED_REPOS = ALL_REPOS;
+  CURRENT_PAGE = 1;
+  renderPage(CURRENT_PAGE);
+  setupControls(ALL_REPOS); // mantém sua busca/ordenar
+}
+
+// === Render de uma página específica (aplica slice) ===
+function renderPage(page = 1){
+  const grid = document.querySelector("#repo-grid");
+  const totalPages = Math.max(1, Math.ceil(FILTERED_REPOS.length / PAGE_SIZE));
+  CURRENT_PAGE = Math.min(Math.max(1, page), totalPages);
+
+  const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+  const items = FILTERED_REPOS.slice(start, start + PAGE_SIZE);
+
+  grid.innerHTML = items.map(repoCardTemplate).join("");
+  makeCardsClickable();
+  updateEmptyState();
+  renderPager(totalPages);
+}
+
+// === Pager (Prev • 1 … n • Next) ===
+function renderPager(totalPages){
+  const grid = document.querySelector("#repo-grid");
+  let pager = document.getElementById("pager");
+  if (!pager){
+    pager = document.createElement("nav");
+    pager.id = "pager";
+    pager.className = "pager";
+    pager.setAttribute("role","navigation");
+    pager.setAttribute("aria-label","Paginação");
+    grid.insertAdjacentElement("afterend", pager);
+  }
+
+  if (totalPages <= 1){
+    pager.innerHTML = "";
+    pager.hidden = true;
+    return;
+  }
+  pager.hidden = false;
+
+  // helper para montar botões
+  const btn = (label, opts={}) => {
+    const { disabled=false, page=null, current=false } = opts;
+    return `<button class="pager-btn${current?' is-current':''}" ${disabled?'disabled':''} ${page?`data-page="${page}"`:''} ${current?'aria-current="page"':''}>${label}</button>`;
+  };
+
+  // intervalo “inteligente” (mostra no máx 7 botões numéricos)
+  const windowSize = 5;
+  const start = Math.max(1, CURRENT_PAGE - 2);
+  const end = Math.min(totalPages, start + windowSize - 1);
+  const realStart = Math.max(1, Math.min(start, totalPages - windowSize + 1));
+
+  let html = "";
+  html += btn("‹", { disabled: CURRENT_PAGE===1, page: CURRENT_PAGE-1 });
+
+  if (realStart > 1){
+    html += btn(1, { page: 1 });
+    if (realStart > 2) html += `<span class="pager-ellipsis">…</span>`;
+  }
+
+  for (let p = realStart; p <= end; p++){
+    html += btn(p, { page: p, current: p===CURRENT_PAGE });
+  }
+
+  if (end < totalPages){
+    if (end < totalPages - 1) html += `<span class="pager-ellipsis">…</span>`;
+    html += btn(totalPages, { page: totalPages });
+  }
+
+  html += btn("›", { disabled: CURRENT_PAGE===totalPages, page: CURRENT_PAGE+1 });
+  pager.innerHTML = html;
+
+  // eventos (delegação)
+  pager.onclick = (e) => {
+    const b = e.target.closest(".pager-btn");
+    if (!b || b.disabled) return;
+    const page = parseInt(b.dataset.page, 10);
+    if (!isNaN(page)) renderPage(page);
+  };
 }
 
 /* ====== Controles (busca + sort) ====== */
@@ -187,7 +292,9 @@ function setupControls(repos){
         })
       : sorted;
 
-    grid.innerHTML = filtered.map(repoCardTemplate).join("");
+    FILTERED_REPOS = filtered;   // atualiza lista visível
+    renderPage(1);               // volta para a primeira página
+
     makeCardsClickable();
     updateEmptyState();
   }
@@ -208,7 +315,7 @@ function makeCardsClickable(){
 
     function go(){
       const url = card.getAttribute("data-href");
-      if (url) window.location.href = url; // redireciona na mesma aba
+      if (url) window.open(url, "_blank", "noopener"); // redireciona em abas diferentes
     }
 
     card.addEventListener("click", (e) => {

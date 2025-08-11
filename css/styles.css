@@ -245,3 +245,18 @@ strong, b{font-weight:900}
   .links .btn{padding:.45rem .65rem}
 }
 
+.pager{
+  display:flex; gap:.4rem; align-items:center; justify-content:center;
+  margin-top:16px; flex-wrap:wrap;
+}
+.pager-btn{
+  background:#0b121a; color:var(--fg);
+  border:1px solid var(--border);
+  padding:.45rem .7rem; border-radius:10px;
+  font-weight:900; cursor:pointer;
+  transition:border .2s ease, background .2s ease, transform .12s ease;
+}
+.pager-btn:hover{ border-color:var(--accent); background:rgba(0,230,118,.08); transform:translateY(-1px); }
+.pager-btn[disabled]{ opacity:.5; cursor:not-allowed; transform:none; }
+.pager-btn.is-current{ border-color:var(--accent); background:rgba(0,230,118,.12); }
+.pager-ellipsis{ color:var(--muted); padding:0 .25rem; user-select:none; }
