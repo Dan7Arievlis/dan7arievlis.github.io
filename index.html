@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daniel Neves • Portfólio</title>
+    <meta name="description" content="Portfólio e repositórios públicos de Daniel Neves (Dan7Arievlis)." />
+    <link rel="preconnect" href="https://api.github.com" crossorigin />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#repos">Pular para a lista</a>
+
+    <header class="site-header" role="banner">
+      <div class="container header-inner">
+        <div class="brand">
+          <a class="avatar" id="avatar-wrap" href="https://github.com/Dan7Arievlis" target="_blank" rel="noopener" aria-label="Abrir perfil no GitHub">
+            <img id="avatar" alt="Foto de perfil de Daniel Neves" loading="lazy" decoding="async" />
+            <span class="avatar-fallback" aria-hidden="true">DN</span>
+          </a>
+          <div class="identity">
+            <h1 class="name">Daniel Neves</h1>
+            <p class="username">@<span id="username">Dan7Arievlis</span></p>
+          </div>
+        </div>
+
+        <nav aria-label="links externos" class="links">
+          <a class="btn" href="https://github.com/Dan7Arievlis" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" id="conteudo" role="main">
+      <section class="about" aria-labelledby="sobre-titulo">
+        <h2 id="sobre-titulo">Sobre</h2>
+        <p>
+          Desenvolvedor com foco em soluções simples e eficientes. Tecnologias que uso/estudo:
+        </p>
+        <ul class="tech-badges" aria-label="tecnologias">
+          <li class="badge">Java</li>
+          <li class="badge">Python</li>
+          <li class="badge">Spring Boot</li>
+          <li class="badge">Docker</li>
+          <li class="badge">Google Apps Script</li>
+          <li class="badge">SQL</li>
+          <li class="badge">NoSQL</li>
+          <li class="badge">Haskell</li>
+          <li class="badge">JavaScript</li>
+          <li class="badge">CSS</li>
+        </ul>
+      </section>
+
+      <section class="controls" aria-labelledby="lista-controles">
+        <h2 id="lista-controles" class="sr-only">Controles da lista</h2>
+        <div class="toolbar">
+          <label class="input-wrap">
+            <span class="sr-only">Buscar repositórios</span>
+            <input id="search" type="search" placeholder="Buscar por nome ou descrição..." autocomplete="off" />
+          </label>
+
+          <label class="select-wrap">
+            <span class="sr-only">Ordenar por: </span>
+            <select id="sort">
+              <option value="updated" selected>Atualizados</option>
+              <option value="stars">Avaliações</option>
+              <option value="name">Nome</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="repos" id="repos" aria-labelledby="repos-titulo">
+        <h2 id="repos-titulo">Repositórios</h2>
+
+        <div id="repo-grid" class="repo-grid" role="list" aria-busy="true">
+          <!-- skeletons iniciais -->
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+          <div class="card skeleton" role="listitem" aria-hidden="true"></div>
+        </div>
+
+        <p id="empty" class="empty hidden" role="status">Nenhum repositório encontrado.</p>
+        <p id="error" class="error hidden" role="alert">Não foi possível carregar os repositórios agora. Tente novamente em instantes.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <p><span id="year"></span> <strong>Daniel Neves</strong> • Construído com HTML, CSS e JS</p>
+      </div>
+    </footer>
+
+    <script>
+      window.PORTFOLIO_CONFIG = {
+        username: "Dan7Arievlis",
+        perPage: 100
+      };
+    </script>
+    <script src="js/scripts.js" defer></script>
+  </body>
+</html>
