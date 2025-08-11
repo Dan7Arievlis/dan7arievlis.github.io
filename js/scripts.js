@@ -1,6 +1,49 @@
 /* ====== Config ====== */
 const GH_USERNAME = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
-const PER_PAGE = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.perPage) || 100;
+const PER_PAGE = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.perPage) || 9;
+
+/* Cores por linguagem (baseadas no GitHub Linguist + ajustes p/ dark UI) */
+const LANGUAGE_COLORS = {
+  "Java": "#b07219",
+  "Python": "#3572A5",
+  "JavaScript": "#f1e05a",
+  "TypeScript": "#3178c6",
+  "HTML": "#e34c26",
+  "CSS": "#563d7c",
+  "Shell": "#89e051",
+  "Dockerfile": "#384d54",
+  "Go": "#00ADD8",
+  "Rust": "#dea584",
+  "C": "#555555",
+  "C++": "#f34b7d",
+  "C#": "#178600",
+  "PHP": "#4F5D95",
+  "Ruby": "#701516",
+  "Kotlin": "#A97BFF",
+  "Swift": "#F05138",
+  "Haskell": "#5e5086",
+  "Scala": "#c22d40",
+  "R": "#198CE7",
+  "Dart": "#00B4AB",
+  "Elixir": "#6e4a7e",
+  "Perl": "#0298c3",
+  "Objective-C": "#438eff",
+  "TeX": "#3D6117",
+  "Jupyter Notebook": "#DA5B0B",
+  "Google Apps Script": "#00acc1",
+  "SQL": "#e38c00",
+  "PLpgSQL": "#336790",
+  "TSQL": "#205b9f",
+  "Vim Script": "#199f4b",
+  "Makefile": "#427819",
+  // fallbacks p/ nomes não mapeados:
+  "SCSS": "#c6538c", "Sass": "#a53b70", "Vue": "#41B883", "Lua": "#000080"
+};
+
+function getLangColor(name){
+  if (!name) return null;
+  return LANGUAGE_COLORS[name] || null;
+}
 
 /* ====== Helpers ====== */
 const el = sel => document.querySelector(sel);
@@ -17,6 +60,13 @@ function repoCardTemplate(repo) {
   const homepage = repo.homepage && repo.homepage.trim() ? repo.homepage.trim() : null;
   const lang = repo.language ? [repo.language] : [];
   const topics = (repo.topics || []).slice(0, 4);
+  // supondo langs = ["JavaScript","HTML","CSS"]
+    const colors = langs.map(getLangColor).filter(Boolean);
+    const stripe = colors.length
+    ? `linear-gradient(180deg, ${colors.map((c,i)=>`${c} ${Math.round(i*100/colors.length)}% ${Math.round((i+1)*100/colors.length)}%`).join(", ")})`
+    : null;
+    const styleStripe = stripe ? `--lang-color:${stripe};` : (langColor ? `--lang-color:${langColor};` : "");
+    // …e use style="${styleStripe}"
 
   const pills = [
     ...lang.map(l => `<span class="pill lang" title="Linguagem principal">${l}</span>`),
@@ -25,10 +75,12 @@ function repoCardTemplate(repo) {
   ].join("");
 
   // card clicável: data-href com URL do repo
-  cardspecs = `
+  return `
     <article class="card clickable" role="link" tabindex="0"
              aria-label="Abrir repositório ${repo.name} no GitHub"
-             data-href="${repo.html_url}">
+             data-href="${repo.html_url}"
+             data-lang="${langMain || ''}"
+             style="${styleStripe}">
       <h3 class="title">${repo.name}</h3>
       <p class="desc">${desc}</p>
 
@@ -39,15 +91,14 @@ function repoCardTemplate(repo) {
         </div>
       </div>
 
-      <!--<div class="actions">
+      <!-- <div class="actions">
         <a class="link" href="${repo.html_url}" target="_blank" rel="noopener">
           Repositório
         </a>
         ${homepage ? `<a class="link" href="${homepage}" target="_blank" rel="noopener">Demo</a>` : ""}
-      </div>-->
+      </div>  -->
     </article>
-  `
-  return cardspecs;
+  `;
 }
 
 /* ====== Fetch + Build ====== */
@@ -78,6 +129,25 @@ async function loadRepos(){
 
     // Ordena por updated inicialmente
     repos.sort(sorters.updated);
+
+    // depois de "repos.sort(sorters.updated);"
+    const LIMIT_LANG = 3;
+
+    async function fetchTopLangs(repo){
+    try{
+        const r = await fetch(repo.languages_url);
+        if (!r.ok) return [];
+        const data = await r.json();
+        return Object.entries(data).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n])=>n);
+    }catch{ return []; }
+    }
+
+    const enriched = await Promise.all(repos.map(async (repo, i) => {
+    const langs = (i < LIMIT_LANG) ? await fetchTopLangs(repo) : (repo.language ? [repo.language] : []);
+    return { repo, langs };
+    }));
+
+    // e adapte o template para aceitar {repo, langs}
 
     // Render
     grid.innerHTML = repos.map(repoCardTemplate).join("");
