@@ -10,66 +10,48 @@ html, body { color-scheme: dark; }
   --border:#1b2430;
   --shadow:0 10px 30px rgba(0,0,0,.35);
   --radius:16px;
-  --select-arrow-gap: 14px;
-  --select-arrow-size: 10px;
+  --select-arrow-gap:14px;
+  --select-arrow-size:10px;
 }
 
-#pager-top{ margin-bottom: 12px; }
+#pager-top{ margin-bottom:12px; }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+*{ box-sizing:border-box }
+html,body{ height:100% }
 body{
   margin:0;
   background:linear-gradient(180deg, var(--bg), #0a0d13);
   color:var(--fg);
-  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
   text-rendering:optimizeLegibility;
   -webkit-font-smoothing:antialiased;
 }
-strong, b{font-weight:900}
+strong,b{ font-weight:900 }
 
+/* Avatar (header) */
 .avatar{
   position:relative;
-  width:56px; height:56px;
-  border-radius:14px;
+  width:44px; height:44px; border-radius:12px;
   display:grid; place-items:center;
   background:linear-gradient(135deg, var(--panel), var(--bg-elev));
   border:1px solid var(--border);
   box-shadow:var(--shadow);
-  text-decoration:none;
-  overflow:hidden;
-  transition: border-color .2s ease, transform .12s ease, box-shadow .2s ease;
-  font-weight:900; letter-spacing:.4px;
-  color:var(--fg);
+  text-decoration:none; overflow:hidden;
+  transition:border-color .2s ease, transform .12s ease, box-shadow .2s ease;
+  font-weight:900; letter-spacing:.4px; color:var(--fg);
 }
 .avatar:hover{ border-color:var(--accent); transform:translateY(-1px); box-shadow:0 10px 30px rgba(0,230,118,.15) }
 .avatar:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(0,230,118,.18) }
-
-.avatar img{
-  width:100%; height:100%;
-  object-fit:cover; display:block;
-  opacity:0; transition:opacity .2s ease;
-}
+.avatar img{ width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity .2s ease; }
 .avatar.is-loaded img{ opacity:1; }
-
-.avatar-fallback{
-  position:absolute; inset:0;
-  display:grid; place-items:center;
-  background:transparent;
-  font-weight:900;
-}
+.avatar-fallback{ position:absolute; inset:0; display:grid; place-items:center; background:transparent; font-weight:900; }
 .avatar.is-loaded .avatar-fallback{ opacity:0; transition:opacity .15s ease; }
 
-
-.container{
-  width:min(1100px, 92vw);
-  margin-inline:auto;
-}
+/* Layout base */
+.container{ width:min(1100px, 92vw); margin-inline:auto; }
 
 /* Acessibilidade */
-.skip-link{
-  position:absolute; left:-9999px; top:auto;
-}
+.skip-link{ position:absolute; left:-9999px; top:auto; }
 .skip-link:focus{
   left:1rem; top:1rem; z-index:1000;
   background:var(--accent); color:#05160d;
@@ -83,21 +65,10 @@ strong, b{font-weight:900}
   background:rgba(11,15,20,.7);
   z-index:10;
 }
-.header-inner{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:18px 0;
-}
-.brand{display:flex; align-items:center; gap:14px}
-.avatar{
-  width:44px; height:44px; border-radius:12px;
-  display:grid; place-items:center;
-  background:linear-gradient(135deg, var(--panel), var(--bg-elev));
-  border:1px solid var(--border);
-  box-shadow:var(--shadow);
-  font-weight:900; letter-spacing:.5px;
-}
-.identity .name{margin:0; font-size:1.25rem; font-weight:900; line-height:1.1}
-.identity .username{margin:2px 0 0; color:var(--muted); font-size:.95rem}
+.header-inner{ display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
+.brand{ display:flex; align-items:center; gap:14px }
+.identity .name{ margin:0; font-size:1.25rem; font-weight:900; line-height:1.1 }
+.identity .username{ margin:2px 0 0; color:var(--muted); font-size:.95rem }
 
 .links .btn{
   display:inline-flex; align-items:center; gap:.5rem;
@@ -105,20 +76,13 @@ strong, b{font-weight:900}
   padding:.5rem .8rem; border-radius:12px; text-decoration:none; font-weight:900;
   transition:transform .15s ease, background .2s ease, box-shadow .2s ease;
 }
-.links .btn:hover{background:rgba(0,230,118,.08); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,230,118,.12)}
+.links .btn:hover{ background:rgba(0,230,118,.08); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,230,118,.12) }
 
 /* Sections */
-.about, .controls, .repos{margin:30px 0}
-.about p{margin:.25rem 0 1rem}
-.tech-badges{
-  display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; padding:0; margin:0;
-}
-.badge{
-  border:1px solid var(--border); background:var(--bg-elev);
-  padding:.35rem .6rem; border-radius:999px; font-weight:900; font-size:.9rem;
-}
-.badge:hover{border-color:var(--accent)}
+.about,.controls,.repos{ margin:30px 0 }
+.about p{ margin:.25rem 0 1rem }
 
+/* Toolbar (busca + ordenar) */
 .toolbar{
   display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;
   background:var(--panel); border:1px solid var(--border); padding:12px; border-radius:14px;
@@ -127,59 +91,25 @@ strong, b{font-weight:900}
   background:#0b121a; color:var(--fg); border:1px solid var(--border);
   padding:.65rem .8rem; border-radius:12px; min-width:260px; outline:none;
 }
-.input-wrap input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,230,118,.18)}
-.select-wrap { position: relative; margin-right: 7.2rem; } /* mantém */
+.input-wrap input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,230,118,.18) }
 
+.select-wrap{ position:relative; margin-right:7.2rem; }
 .select-wrap select{
-  background:#0b121a;
-  color:var(--fg);
-  border:1px solid var(--border);
-  padding:.6rem .8rem;
-  border-radius:12px;
-  outline:none;
-
-  /* evita bug do hover branco e some com a seta nativa */
-  color-scheme: dark;
-  appearance:none;
-  -webkit-appearance:none;
-  background-clip: padding-box;
-
-  /* espaço para a seta custom à direita */
-  padding-right: calc(1.2rem + var(--select-arrow-size,10px) + var(--select-arrow-gap,14px));
-
-  /* 👇 seta (muted) como SVG inline — note o %23 para escapar o # */
-  background-image: url("data:image/svg+xml;utf8, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%239aa4b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/> </svg>");
-  background-repeat: no-repeat;
-  background-position: right var(--select-arrow-gap,14px) center;
-  background-size: var(--select-arrow-size,10px) var(--select-arrow-size,10px);
+  background:#0b121a; color:var(--fg); border:1px solid var(--border);
+  padding:.6rem .8rem; border-radius:12px; outline:none;
+  color-scheme:dark; appearance:none; -webkit-appearance:none; background-clip:padding-box;
+  padding-right:calc(1.2rem + var(--select-arrow-size) + var(--select-arrow-gap));
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%239aa4b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right var(--select-arrow-gap) center;
+  background-size:var(--select-arrow-size) var(--select-arrow-size);
 }
-
-/* foco e hover — só troca a cor da seta para o accent */
 .select-wrap select:hover,
-.select-wrap select:focus{
-  border-color: var(--accent);
-  box-shadow:0 0 0 3px rgba(0,230,118,.18);
-  background-image: url("data:image/svg+xml;utf8, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'> <path d='M3 4.5l3 3 3-3' stroke='%2300e676' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/> </svg>");
-}
-
-/* seta custom (não sofre o bug) */
-/* .select-wrap::after{
-  content:"";
-  position:absolute;
-  right: var(--select-arrow-gap,14px);
-  top:50%; transform: translateY(-60%) rotate(45deg);
-  width: var(--select-arrow-size,10px);
-  height: var(--select-arrow-size,10px);
-  border-right:2px solid var(--muted);
-  border-bottom:2px solid var(--muted);
-  pointer-events:none;
-} */
-
 .select-wrap select:focus{
   border-color:var(--accent);
   box-shadow:0 0 0 3px rgba(0,230,118,.18);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%2300e676' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
 }
-/* .select-wrap:hover::after{ border-color: var(--accent); } opcional */
 
 /* Repo grid */
 .repo-grid{
@@ -189,6 +119,7 @@ strong, b{font-weight:900}
   margin-top:14px;
 }
 .card{
+  position:relative;
   background:linear-gradient(160deg, var(--bg-elev), var(--panel));
   border:1px solid var(--border);
   border-radius:var(--radius);
@@ -197,107 +128,56 @@ strong, b{font-weight:900}
   display:flex; flex-direction:column; gap:10px;
   transition:border .2s ease, transform .15s ease, box-shadow .2s ease;
 }
-
-/* deixar o card como “container” da faixa colorida */
-.card{ position: relative; }
-
-/* faixa vertical à esquerda com a cor da linguagem
-.card::before{
-  content:"";
-  position:absolute;
-  left:0; top:0; bottom:0;
-  width:6px;
-  border-top-left-radius: var(--radius);
-  border-bottom-left-radius: var(--radius);
-  background: var(--lang-color, var(--accent)); /* fallback: accent verde
-} 
-*/
-
 .card::before{
   content:""; position:absolute; left:0; right:0; top:0; height:6px;
-  border-top-left-radius: var(--radius); border-top-right-radius: var(--radius);
-  background: var(--lang-color, var(--accent));
+  border-top-left-radius:var(--radius); border-top-right-radius:var(--radius);
+  background:var(--lang-color, var(--accent));
 }
 
-/* badge de linguagem com “dot” colorido */
-.pill.lang{
-  position:relative;
-  padding-left: 1.2rem;           /* espaço pro dot */
-}
-.pill.lang::before{
-  content:"";
-  position:absolute;
-  left:.5rem; top:50%; transform:translateY(-50%);
-  width:8px; height:8px; border-radius:999px;
-  background: var(--lang-color, var(--accent));
-  box-shadow: 0 0 0 2px #0b121a;  /* anel para contraste no fundo escuro */
-}
+.card.clickable{ cursor:pointer; }
+.card:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 16px 40px rgba(0,0,0,.45) }
+.card .title{ margin:0; font-weight:900; font-size:1.05rem; line-height:1.25; }
+.card .desc{ margin:0; color:var(--muted); min-height:2.6em }
 
-
-.card.clickable{ cursor: pointer; }
-.card.clickable .actions a{ cursor: pointer; } /* só pra explicitar */
-.card:hover{border-color:var(--accent); transform:translateY(-2px); box-shadow:0 16px 40px rgba(0,0,0,.45)}
-.card .title{
-  margin:0; font-weight:900; font-size:1.05rem; line-height:1.25;
-}
-.card .desc{margin:0; color:var(--muted); min-height:2.6em}
-.card .meta{
-  display:flex;
-  flex-direction:column;   /* duas linhas: topo e base */
-  gap:.6rem;
-  margin-top:auto;
-}
-.meta-bottom{
-  display:flex;
-  align-items:center;
-  justify-content:space-between; /* data à esquerda, estrelas à direita */
-  gap:.75rem;
-}
+.card .meta{ display:flex; flex-direction:column; gap:.6rem; margin-top:auto; }
+.meta-bottom{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
 .star{ display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap; }
 
-.pills{display:flex; gap:.4rem; flex-wrap:wrap}
+.pills{ display:flex; gap:.4rem; flex-wrap:wrap }
 .pill{
   font-size:.78rem; padding:.25rem .5rem; border-radius:999px;
   border:1px solid var(--border); background:#0b121a; white-space:nowrap; font-weight:700;
 }
-.pill.lang{ border-color: var(--border); } /* sem verde */
-
-/* força quebra de linha antes da data */
+.pill.lang{ position:relative; padding-left:1.2rem; border-color:var(--border); }
+.pill.lang::before{
+  content:""; position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:999px; background:var(--lang-color, var(--accent));
+  box-shadow:0 0 0 2px #0b121a;
+}
 .pill.updated{ opacity:.9; }
 
-
-.actions{
-  display:flex; gap:.5rem; margin-top:.25rem;
-}
+.actions{ display:flex; gap:.5rem; margin-top:.25rem; }
 .link{
   text-decoration:none; font-weight:900; border:1px solid var(--border);
   padding:.45rem .65rem; border-radius:10px; display:inline-flex; align-items:center; gap:.4rem;
 }
-.link:hover{border-color:var(--accent); background:rgba(0,230,118,.08)}
-.star{display:inline-flex; align-items:center; gap:.3rem}
+.link:hover{ border-color:var(--accent); background:rgba(0,230,118,.08) }
 
 /* Skeleton */
-.skeleton{
-  position:relative; overflow:hidden; min-height:140px;
-}
+.skeleton{ position:relative; overflow:hidden; min-height:140px; }
 .skeleton::after{
   content:""; position:absolute; inset:0;
   background:linear-gradient(90deg, transparent, rgba(255,255,255,.04), transparent);
   animation:shine 1.2s infinite;
 }
-@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes shine{ 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 
 /* Empty & error */
-.hidden{display:none}
-.empty,.error{
-  color:var(--muted); text-align:center; margin-top:16px;
-}
+.hidden{ display:none }
+.empty,.error{ color:var(--muted); text-align:center; margin-top:16px; }
 
 /* Footer */
-.site-footer{
-  border-top:1px solid var(--border);
-  margin-top:40px; padding:30px 0; color:var(--muted);
-}
+.site-footer{ border-top:1px solid var(--border); margin-top:40px; padding:30px 0; color:var(--muted); }
 
 /* Util */
 .sr-only{
@@ -306,10 +186,11 @@ strong, b{font-weight:900}
 
 /* Responsividade */
 @media (max-width:520px){
-  .identity .name{font-size:1.1rem}
-  .links .btn{padding:.45rem .65rem}
+  .identity .name{ font-size:1.1rem }
+  .links .btn{ padding:.45rem .65rem }
 }
 
+/* Pager */
 .pager{
   display:flex; gap:.4rem; align-items:center; justify-content:center;
   margin-top:16px; flex-wrap:wrap;
@@ -328,105 +209,56 @@ strong, b{font-weight:900}
 
 /* Accent por card (herdado da linguagem) */
 .card{ --card-accent: var(--lang-color, var(--accent)); }
-.card:hover{
-  border-color: var(--card-accent);
-  box-shadow:0 16px 40px rgba(0,0,0,.45);
-}
-.pill.lang::before{ background: var(--card-accent); }
+.card:hover{ border-color:var(--card-accent); box-shadow:0 16px 40px rgba(0,0,0,.45); }
+.pill.lang::before{ background:var(--card-accent); }
 
 /* Contador */
-.repo-counter{
-  color: var(--muted);
-  font-weight: 900;
-  margin: 6px 0 0;
-}
+.repo-counter{ color:var(--muted); font-weight:900; margin:6px 0 0; }
 
-/* Badges do topo com cor por linguagem */
-.tech-badges .badge{
+/* ===== Bloco de Tecnologias (Linguagens/Tópicos) ===== */
+.tech-badges{ display:flex; flex-direction:column; gap:10px; }
+.tech-group{ display:flex; flex-direction:column; gap:6px; }
+.tech-heading{ margin:0; font-size:.9rem; font-weight:900; color:var(--muted); }
+.tech-list{ display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; margin:0; padding:0; }
+
+/* Badge base */
+.badge{
   position:relative;
-  padding-left: 1.2rem;
-  --badge-color: var(--accent);
-}
-.tech-badges .badge::before{
-  content:"";
-  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
-  width:8px; height:8px; border-radius:999px;
-  background: var(--badge-color);
-  box-shadow: 0 0 0 2px #0b121a;
-}
-
-
-/* Badges do topo já têm --badge-color (setada via JS). 
-   Vamos usar essa cor no highlight (hover/focus). */
-.tech-badges .badge{
-  position:relative;
-  padding:.35rem .6rem .35rem 1.2rem;
+  padding:.35rem .6rem;
   border:1px solid var(--border);
   border-radius:999px;
   background:var(--bg-elev);
   color:var(--fg);
   font-weight:900; font-size:.9rem;
-  transition: border .2s ease, background .2s ease, color .2s ease, transform .12s ease, box-shadow .2s ease;
+  transition:border .2s ease, background .2s ease, color .2s ease, transform .12s ease, box-shadow .2s ease;
 }
 
-/* dot colorido já existente */
-.tech-badges .badge::before{
-  content:"";
-  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
-  width:8px; height:8px; border-radius:999px;
-  background: var(--badge-color, var(--accent));
-  box-shadow: 0 0 0 2px #0b121a;
-}
-
-/* highlight no hover/foco usando a cor da linguagem */
-.tech-badges .badge:hover,
-.tech-badges .badge:focus-visible{
-  border-color: var(--badge-color, var(--accent));
-  /* Usa color-mix para um fundo levemente tingido pela cor da linguagem */
-  background: color-mix(in srgb, var(--badge-color, var(--accent)) 16%, transparent);
-  /* background: color-mix(in srgb, #00e676 16%, transparent); por exemplo */
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--badge-color, var(--accent)) 22%, transparent);
-  transform: translateY(-1px);
-  outline: none;
-}
-
-/* (opcional) estado "selecionado" se algum dia você usar filtro por linguagem */
-.tech-badges .badge.is-active{
-  border-color: var(--badge-color, var(--accent));
-  background: color-mix(in srgb, var(--badge-color, var(--accent)) 26%, transparent);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--badge-color, var(--accent)) 28%, transparent);
-}
-
-/* layout do bloco de tecnologias */
-.tech-badges{ display:flex; flex-direction:column; gap:10px; }
-.tech-group{ display:flex; flex-direction:column; gap:6px; }
-.tech-heading{
-  margin:0;
-  font-size:.9rem;
-  font-weight:900;
-  color:var(--muted);
-}
-.tech-list{ display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; margin:0; padding:0; }
-
-/* === Dots coloridos APENAS nas linguagens === */
+/* Dots coloridos apenas em linguagens */
 .tech-langs .badge::before,
 .badge[data-type="lang"]::before{
-  content:"";
-  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
+  content:""; position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
   width:8px; height:8px; border-radius:999px;
-  background: var(--badge-color, var(--accent));
-  box-shadow: 0 0 0 2px #0b121a;
+  background:var(--badge-color, var(--accent));
+  box-shadow:0 0 0 2px #0b121a;
 }
-.tech-topics .badge::before,
-.badge[data-type="topic"]::before{
-  content:none !important; display:none !important;
-}
-
-/* garante padding-left correto (com/sem dot) */
-.tech-list .badge{ position:relative; padding:.35rem .6rem; }
 .tech-langs .badge,
 .badge[data-type="lang"]{ padding-left:1.2rem; }
 
-.tech-list{
-  display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; margin:0; padding:0;
+/* Tópicos sem dot */
+.tech-topics .badge::before,
+.badge[data-type="topic"]::before{ content:none; display:none; }
+
+/* Highlight por cor da linguagem (quando houver --badge-color) */
+.tech-badges .badge:hover,
+.tech-badges .badge:focus-visible{
+  border-color:var(--badge-color, var(--accent));
+  background:color-mix(in srgb, var(--badge-color, var(--accent)) 16%, transparent);
+  box-shadow:0 6px 18px color-mix(in srgb, var(--badge-color, var(--accent)) 22%, transparent);
+  transform:translateY(-1px);
+  outline:none;
+}
+.tech-badges .badge.is-active{
+  border-color:var(--badge-color, var(--accent));
+  background:color-mix(in srgb, var(--badge-color, var(--accent)) 26%, transparent);
+  box-shadow:0 8px 22px color-mix(in srgb, var(--badge-color, var(--accent)) 28%, transparent);
 }

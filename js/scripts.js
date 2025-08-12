@@ -6,6 +6,8 @@ const GH_PER_PAGE  = 100; // quantos baixar da API do GitHub (máx 100 por reque
 
 /* ====== Estado para paginação ====== */
 let TOTAL_PUBLIC_REPOS = null;
+let ACTIVE_BADGE_FILTER = null; // { type: "lang" | "topic", value: "javascript" }
+
 
 let ALL_REPOS = [];
 let FILTERED_REPOS = [];
@@ -102,6 +104,7 @@ function renderTopTechBadgesForOtherUser(repos){
   topicsGroup.style.display = topics.length ? "" : "none";
 
   colorizeTopBadges(); // pinta cores só para linguagens
+  updateBadgeActiveState();
 }
 
 
@@ -136,6 +139,86 @@ const sorters = {
   stars: (a,b) => (b.stargazers_count||0) - (a.stargazers_count||0),
   name: (a,b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity:"base" })
 };
+
+function getSearchQuery(){ return (document.querySelector("#search")?.value || "").toLowerCase().trim(); }
+function getSortKey(){ return document.querySelector("#sort")?.value || "updated"; }
+
+/* Marca/desmarca visual do badge ativo */
+function updateBadgeActiveState(){
+  document.querySelectorAll(".tech-badges .badge").forEach(b => {
+    b.classList.remove("is-active");
+    const typeGuess = b.dataset.type || (b.closest(".tech-langs") ? "lang" : (b.closest(".tech-topics") ? "topic" : ""));
+    const value = (b.textContent || "").trim().replace(/^#/, "").toLowerCase();
+    if (ACTIVE_BADGE_FILTER && ACTIVE_BADGE_FILTER.type === typeGuess && ACTIVE_BADGE_FILTER.value === value){
+      b.classList.add("is-active");
+    }
+  });
+}
+
+/* Recalcula a lista considerando busca + badge selecionado + ordenação */
+function recomputeList({ scroll = true } = {}){
+  const sortKey = getSortKey();
+  const q = getSearchQuery();
+
+  let list = [...ALL_REPOS].sort(sorters[sortKey]);
+
+  if (q){
+    list = list.filter(repo => {
+      const hay = [
+        repo.name || "",
+        repo.description || "",
+        (repo.topics||[]).join(" "),
+        repo.language || ""
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  if (ACTIVE_BADGE_FILTER){
+    const f = ACTIVE_BADGE_FILTER;
+    if (f.type === "lang"){
+      list = list.filter(r => (r.language || "").toLowerCase() === f.value);
+    } else { // topic
+      list = list.filter(r => (r.topics || []).some(t => String(t).toLowerCase() === f.value));
+    }
+
+    // Se zerou, limpa o filtro e mostra TODOS (e limpa a busca pra ficar coerente)
+    if (list.length === 0){
+      ACTIVE_BADGE_FILTER = null;
+      updateBadgeActiveState();
+      const searchEl = document.querySelector("#search");
+      if (searchEl) searchEl.value = "";
+      list = [...ALL_REPOS].sort(sorters[sortKey]);
+    }
+  }
+
+  FILTERED_REPOS = list;
+  renderPage(1, { scroll });
+}
+
+/* Delegação de clique nos badges do topo */
+function attachTopBadgeFilterHandlers(){
+  const wrap = document.getElementById("tech-badges");
+  if (!wrap) return;
+  wrap.addEventListener("click", (e) => {
+    const badge = e.target.closest(".badge");
+    if (!badge) return;
+
+    const type = badge.dataset.type || (badge.closest(".tech-langs") ? "lang" : (badge.closest(".tech-topics") ? "topic" : ""));
+    const raw  = (badge.textContent || "").trim();
+    const val  = raw.replace(/^#/, "").toLowerCase();
+
+    // toggle: clicou no mesmo -> limpa filtro
+    if (ACTIVE_BADGE_FILTER && ACTIVE_BADGE_FILTER.type === type && ACTIVE_BADGE_FILTER.value === val){
+      ACTIVE_BADGE_FILTER = null;
+    } else {
+      ACTIVE_BADGE_FILTER = { type, value: val };
+    }
+    updateBadgeActiveState();
+    recomputeList({ scroll: true });
+  });
+}
+
 
 // === Cache simples em localStorage (30 min) ===
 const CACHE_KEY = `gh-repos:${GH_USERNAME}`;
@@ -280,6 +363,7 @@ function renderRepos(repos){
   ALL_REPOS = repos || [];
   FILTERED_REPOS = ALL_REPOS;
   maybeUpdateTopTechBadges(ALL_REPOS);
+  updateBadgeActiveState();
   CURRENT_PAGE = 1;
 
   ensurePagerContainers();    // cria #pager-top e #pager-bottom se não existirem
@@ -477,34 +561,41 @@ function renderPager(totalPages){
 
 /* ====== Controles (busca + sort) ====== */
 function setupControls(repos){
-  const grid = el("#repo-grid");
-  const search = el("#search");
-  const sort = el("#sort");
+    const search = el("#search");
+    const sort = el("#sort");
 
-  function apply(){
-    const q = (search?.value || "").toLowerCase().trim();
-    const sorted = [...repos].sort(sorters[sort?.value || "updated"]);
-    const filtered = q
-      ? sorted.filter((repo) => {
-          const hay = [
-            repo.name || "",
-            repo.description || "",
-            (repo.topics||[]).join(" "),
-            repo.language || ""
-          ].join(" ").toLowerCase();
-          return hay.includes(q);
-        })
-      : sorted;
+    const onChange = () => recomputeList({ scroll:true });
 
-        FILTERED_REPOS = filtered;
-        renderPage(1, { scroll:true });   // volta ao topo da lista ao mudar filtro/ordem
-    }
+    search?.addEventListener("input", onChange);
+    sort?.addEventListener("change", onChange);
+  // const grid = el("#repo-grid");
+  // const search = el("#search");
+  // const sort = el("#sort");
 
-    makeCardsClickable();
-    updateEmptyState();
+  // function apply(){
+  //   const q = (search?.value || "").toLowerCase().trim();
+  //   const sorted = [...repos].sort(sorters[sort?.value || "updated"]);
+  //   const filtered = q
+  //     ? sorted.filter((repo) => {
+  //         const hay = [
+  //           repo.name || "",
+  //           repo.description || "",
+  //           (repo.topics||[]).join(" "),
+  //           repo.language || ""
+  //         ].join(" ").toLowerCase();
+  //         return hay.includes(q);
+  //       })
+  //     : sorted;
 
-  search?.addEventListener("input", apply);
-  sort?.addEventListener("change", apply);
+  //       FILTERED_REPOS = filtered;
+  //       renderPage(1, { scroll:true });   // volta ao topo da lista ao mudar filtro/ordem
+  //   }
+
+  //   makeCardsClickable();
+  //   updateEmptyState();
+
+  // search?.addEventListener("input", apply);
+  // sort?.addEventListener("change", apply);
 }
 
 /* ====== Card clicável (abre o repo) ====== */
@@ -565,7 +656,9 @@ function updateEmptyState(){
 (function bootstrap(){
   const yearEl = el("#year"); if (yearEl) yearEl.textContent = new Date().getFullYear();
   const userEl = el("#username"); if (userEl) userEl.textContent = GH_USERNAME;
-  colorizeTopBadges();
+  
+  attachTopBadgeFilterHandlers();
+
   loadRepos();
   loadAvatar();
 })();
