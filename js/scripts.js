@@ -112,18 +112,19 @@ function renderTopTechBadgesForOtherUser(repos){
    - Dono padrão: mantém a lista manual (só colore).
    - Outro usuário: gera a partir dos repositórios e esconde o bloco se não houver tópicos. */
 function maybeUpdateTopTechBadges(repos){
-  const topicsGroup = document.querySelector(".tech-topics-group");
-  if (GH_USERNAME === DEFAULT_USERNAME){
-    // você: mantém lista manual, esconde "Tópicos" se estiver vazia
-    if (topicsGroup){
-      const hasTopics = !!document.querySelector(".tech-topics li");
-      topicsGroup.style.display = hasTopics ? "" : "none";
-    }
-    colorizeTopBadges();
-  } else {
+  // const topicsGroup = document.querySelector(".tech-topics-group");
+  // if (GH_USERNAME === DEFAULT_USERNAME){
+  //   // você: mantém lista manual, esconde "Tópicos" se estiver vazia
+  //   if (topicsGroup){
+  //     const hasTopics = !!document.querySelector(".tech-topics li");
+  //     topicsGroup.style.display = hasTopics ? "" : "none";
+  //   }
+  //   colorizeTopBadges();
+  // } else {
+  //   renderTopTechBadgesForOtherUser(repos);
+  // }
     renderTopTechBadgesForOtherUser(repos);
   }
-}
 
 
 function getLangColor(name){
