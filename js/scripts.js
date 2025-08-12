@@ -1,5 +1,6 @@
 /* ====== Config ====== */
-const GH_USERNAME  = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
+const DEFAULT_USERNAME = (window.PORTFOLIO_CONFIG && window.PORTFOLIO_CONFIG.username) || "Dan7Arievlis";
+const GH_USERNAME  = new URLSearchParams(location.search).get("user")?.trim() || DEFAULT_USERNAME;
 const PAGE_SIZE = (window.PORTFOLIO_CONFIG && (window.PORTFOLIO_CONFIG.pageSize || window.PORTFOLIO_CONFIG.perPage)) || 12; //quantos por página (UI)
 const GH_PER_PAGE  = 100; // quantos baixar da API do GitHub (máx 100 por request)
 
@@ -48,6 +49,79 @@ const LANGUAGE_COLORS = {
   // fallbacks p/ nomes não mapeados:
   "SCSS": "#c6538c", "Sass": "#a53b70", "Vue": "#41B883", "Lua": "#000080"
 };
+
+const TECH_BADGES_LIMIT = 24; // limite total de badges (somando linguagens + tópicos)
+
+function extractTechFromRepos(repos){
+  const langCount = new Map();
+  const topicCount = new Map();
+
+  for (const r of (repos||[])){
+    const L = (r.language || "").trim();
+    if (L) langCount.set(L, (langCount.get(L) || 0) + 1);
+
+    const topics = Array.isArray(r.topics) ? r.topics : [];
+    for (const t of topics){
+      const T = String(t).trim().toLowerCase();
+      if (T) topicCount.set(T, (topicCount.get(T) || 0) + 1);
+    }
+  }
+
+  const langs = [...langCount.entries()]
+    .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0], "pt-BR"))
+    .map(([name]) => name);
+
+  const topics = [...topicCount.entries()]
+    .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0], "pt-BR"))
+    .map(([name]) => name);
+
+  // corta pelo limite total (prioriza linguagens)
+  const langsCut = langs.slice(0, TECH_BADGES_LIMIT);
+  const rest = Math.max(0, TECH_BADGES_LIMIT - langsCut.length);
+  const topicsCut = topics.slice(0, rest);
+
+  return { langs: langsCut, topics: topicsCut };
+}
+
+function renderTopTechBadgesForOtherUser(repos){
+  const wrap = document.getElementById("tech-badges");
+  const ulLangs = document.querySelector(".tech-langs");
+  const ulTopics = document.querySelector(".tech-topics");
+  const topicsGroup = document.querySelector(".tech-topics-group");
+  if (!wrap || !ulLangs || !ulTopics || !topicsGroup) return;
+
+  const { langs, topics } = extractTechFromRepos(repos);
+
+  // linguagens (substitui sua lista manual quando for outro usuário)
+  ulLangs.innerHTML = langs.map(l => `<li class="badge" data-type="lang">${l}</li>`).join("");
+
+  // tópicos
+  ulTopics.innerHTML = topics.map(t => `<li class="badge" data-type="topic">#${t}</li>`).join("");
+
+  // some com a linha de "Tópicos" se não houver itens
+  topicsGroup.style.display = topics.length ? "" : "none";
+
+  colorizeTopBadges(); // pinta cores só para linguagens
+}
+
+
+/* Atualiza as tecnologias do topo:
+   - Dono padrão: mantém a lista manual (só colore).
+   - Outro usuário: gera a partir dos repositórios e esconde o bloco se não houver tópicos. */
+function maybeUpdateTopTechBadges(repos){
+  const topicsGroup = document.querySelector(".tech-topics-group");
+  if (GH_USERNAME === DEFAULT_USERNAME){
+    // você: mantém lista manual, esconde "Tópicos" se estiver vazia
+    if (topicsGroup){
+      const hasTopics = !!document.querySelector(".tech-topics li");
+      topicsGroup.style.display = hasTopics ? "" : "none";
+    }
+    colorizeTopBadges();
+  } else {
+    renderTopTechBadgesForOtherUser(repos);
+  }
+}
+
 
 function getLangColor(name){
   if (!name) return null;
@@ -205,6 +279,7 @@ async function loadRepos(){
 function renderRepos(repos){
   ALL_REPOS = repos || [];
   FILTERED_REPOS = ALL_REPOS;
+  maybeUpdateTopTechBadges(ALL_REPOS);
   CURRENT_PAGE = 1;
 
   ensurePagerContainers();    // cria #pager-top e #pager-bottom se não existirem
@@ -463,9 +538,19 @@ function makeCardsClickable(){
 
 function colorizeTopBadges(){
   document.querySelectorAll(".tech-badges .badge").forEach(b => {
-    const name = (b.textContent || "").trim();
-    const color = getLangColor(name);
-    if (color) b.style.setProperty("--badge-color", color);
+    const type = b.dataset.type || "";               // "lang" | "topic" | ""
+    const raw  = (b.textContent || "").trim();
+    const name = raw.startsWith("#") ? raw.slice(1) : raw;
+
+    let color = null;
+    if (type === "lang" || type === "") {
+      color = getLangColor(name);
+    }
+    if (color){
+      b.style.setProperty("--badge-color", color);
+    } else {
+      b.style.removeProperty("--badge-color"); // cai no accent
+    }
   });
 }
 
@@ -485,51 +570,79 @@ function updateEmptyState(){
   loadAvatar();
 })();
 
+function updateHeaderFromProfile(data){
+  const login = (data && data.login) || GH_USERNAME;
+  const displayName = (data && data.name) || login;
+  const htmlUrl = `https://github.com/${login}`;
+
+  // Nome e @username no topo
+  const nameEl = document.querySelector(".identity .name");
+  if (nameEl) nameEl.textContent = displayName;
+  const userEl = document.getElementById("username");
+  if (userEl) userEl.textContent = login;
+
+  // Links do topo (avatar e botão GitHub)
+  const avatarWrap = document.getElementById("avatar-wrap");
+  if (avatarWrap) avatarWrap.href = htmlUrl;
+  const ghLink = document.getElementById("github-link") || document.querySelector('.links a[href^="https://github.com/"]');
+  if (ghLink) ghLink.href = htmlUrl;
+
+  // Alt da foto
+  const img = document.getElementById("avatar");
+  if (img) img.alt = `Foto de perfil de ${displayName}`;
+
+  // ---- Título da página e meta description ----
+  document.title = `${displayName} • Portfólio`;
+
+  // garante a existência da meta description e atualiza o conteúdo
+  let metaDesc = document.querySelector('meta[name="description"]');
+  if (!metaDesc) {
+    metaDesc = document.createElement("meta");
+    metaDesc.setAttribute("name", "description");
+    document.head.appendChild(metaDesc);
+  }
+  metaDesc.setAttribute(
+    "content",
+    `Portfólio e repositórios públicos de ${displayName} (@${login}).`
+  );
+}
 
 async function loadAvatar(){
   const wrap = document.getElementById("avatar-wrap");
   const img  = document.getElementById("avatar");
   if (!wrap || !img) return;
 
-  // 1) tenta usar imagem local (assets/profile.jpg)
-//   const localSrc = "assets/profile.jpg"; // coloque seu arquivo aqui
-  let done = false;
-
-  function markLoaded(){
-    wrap.classList.add("is-loaded");
-    done = true;
-  }
-
-  // tenta local primeiro
-  await new Promise((resolve) => {
-    img.onload = () => { markLoaded(); resolve(); };
-    img.onerror = () => resolve(); // se falhar, tenta GitHub
-    // img.src = localSrc;
+  // helper para setar a imagem e marcar como carregada
+  const trySet = (url) => new Promise(resolve => {
+    img.onload  = () => { wrap.classList.add("is-loaded"); resolve(true); };
+    img.onerror = () => resolve(false);
+    img.src = url;
   });
 
-  if (done) return;
-
-  // 2) fallback: busca avatar do GitHub pela API
-   try{
+  // 1) busca o perfil no GitHub
+  try{
     const res = await fetch(`https://api.github.com/users/${GH_USERNAME}`, {
       headers:{ "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }
     });
     if (!res.ok) throw new Error("user fetch failed");
     const data = await res.json();
 
+    // contador: total de públicos
     TOTAL_PUBLIC_REPOS = typeof data.public_repos === "number" ? data.public_repos : null;
-    updateRepoCounter(); // atualiza contador assim que soubermos o total público
+    updateRepoCounter();
 
-    const url = data.avatar_url ? `${data.avatar_url}&s=120` : null;
-    if (url){
-      await new Promise((resolve)=> {
-        img.onload = () => { markLoaded(); resolve(); };
-        img.onerror = () => resolve();
-        img.src = url;
-      });
-    }
+    // atualiza topo (nome, @, links, alt da foto)
+    updateHeaderFromProfile(data);
+
+    // define o avatar (com param de tamanho; respeita caso já tenha ?)
+    const base = data.avatar_url || "";
+    const url  = base ? `${base}${base.includes("?") ? "&" : "?"}s=120` : "";
+    if (url) await trySet(url);
+
   }catch(e){
-    // se tudo falhar, mantém as iniciais "DN"
-    console.debug("Avatar: usando fallback de iniciais");
+    console.debug("Falha ao buscar perfil; mantendo fallback.", e);
+    // Mesmo com erro, atualiza topo pelo login bruto
+    updateHeaderFromProfile({ login: GH_USERNAME });
   }
 }
+

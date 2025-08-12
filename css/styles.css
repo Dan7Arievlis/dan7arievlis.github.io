@@ -1,3 +1,5 @@
+html, body { color-scheme: dark; }
+
 :root{
   --bg:#0b0f14;
   --bg-elev:#11161f;
@@ -8,6 +10,8 @@
   --border:#1b2430;
   --shadow:0 10px 30px rgba(0,0,0,.35);
   --radius:16px;
+  --select-arrow-gap: 14px;
+  --select-arrow-size: 10px;
 }
 
 #pager-top{ margin-bottom: 12px; }
@@ -124,14 +128,58 @@ strong, b{font-weight:900}
   padding:.65rem .8rem; border-radius:12px; min-width:260px; outline:none;
 }
 .input-wrap input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,230,118,.18)}
-.select-wrap {
-  margin-right: 7.2rem;
-}
+.select-wrap { position: relative; margin-right: 7.2rem; } /* mantém */
+
 .select-wrap select{
-  background:#0b121a; color:var(--fg); border:1px solid var(--border);
-  padding:.6rem .8rem; border-radius:12px; outline:none;
+  background:#0b121a;
+  color:var(--fg);
+  border:1px solid var(--border);
+  padding:.6rem .8rem;
+  border-radius:12px;
+  outline:none;
+
+  /* evita bug do hover branco e some com a seta nativa */
+  color-scheme: dark;
+  appearance:none;
+  -webkit-appearance:none;
+  background-clip: padding-box;
+
+  /* espaço para a seta custom à direita */
+  padding-right: calc(1.2rem + var(--select-arrow-size,10px) + var(--select-arrow-gap,14px));
+
+  /* 👇 seta (muted) como SVG inline — note o %23 para escapar o # */
+  background-image: url("data:image/svg+xml;utf8, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%239aa4b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/> </svg>");
+  background-repeat: no-repeat;
+  background-position: right var(--select-arrow-gap,14px) center;
+  background-size: var(--select-arrow-size,10px) var(--select-arrow-size,10px);
 }
-.select-wrap select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,230,118,.18)}
+
+/* foco e hover — só troca a cor da seta para o accent */
+.select-wrap select:hover,
+.select-wrap select:focus{
+  border-color: var(--accent);
+  box-shadow:0 0 0 3px rgba(0,230,118,.18);
+  background-image: url("data:image/svg+xml;utf8, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'> <path d='M3 4.5l3 3 3-3' stroke='%2300e676' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/> </svg>");
+}
+
+/* seta custom (não sofre o bug) */
+/* .select-wrap::after{
+  content:"";
+  position:absolute;
+  right: var(--select-arrow-gap,14px);
+  top:50%; transform: translateY(-60%) rotate(45deg);
+  width: var(--select-arrow-size,10px);
+  height: var(--select-arrow-size,10px);
+  border-right:2px solid var(--muted);
+  border-bottom:2px solid var(--muted);
+  pointer-events:none;
+} */
+
+.select-wrap select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,230,118,.18);
+}
+/* .select-wrap:hover::after{ border-color: var(--accent); } opcional */
 
 /* Repo grid */
 .repo-grid{
@@ -347,4 +395,38 @@ strong, b{font-weight:900}
   border-color: var(--badge-color, var(--accent));
   background: color-mix(in srgb, var(--badge-color, var(--accent)) 26%, transparent);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--badge-color, var(--accent)) 28%, transparent);
+}
+
+/* layout do bloco de tecnologias */
+.tech-badges{ display:flex; flex-direction:column; gap:10px; }
+.tech-group{ display:flex; flex-direction:column; gap:6px; }
+.tech-heading{
+  margin:0;
+  font-size:.9rem;
+  font-weight:900;
+  color:var(--muted);
+}
+.tech-list{ display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; margin:0; padding:0; }
+
+/* === Dots coloridos APENAS nas linguagens === */
+.tech-langs .badge::before,
+.badge[data-type="lang"]::before{
+  content:"";
+  position:absolute; left:.5rem; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:999px;
+  background: var(--badge-color, var(--accent));
+  box-shadow: 0 0 0 2px #0b121a;
+}
+.tech-topics .badge::before,
+.badge[data-type="topic"]::before{
+  content:none !important; display:none !important;
+}
+
+/* garante padding-left correto (com/sem dot) */
+.tech-list .badge{ position:relative; padding:.35rem .6rem; }
+.tech-langs .badge,
+.badge[data-type="lang"]{ padding-left:1.2rem; }
+
+.tech-list{
+  display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; margin:0; padding:0;
 }
